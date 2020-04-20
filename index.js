@@ -145,7 +145,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
 
 
   console.log('launching headless browser...')
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
   const page = await browser.newPage();
 
   console.log('setting user agent...')
