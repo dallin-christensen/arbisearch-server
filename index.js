@@ -272,6 +272,7 @@ app.get('/api/:eventType', async (req, res) => {
     const eventType = req.params.eventType
     const queryType = req.query.queryType
     const data = await scrapeData({ eventType, opposing: queryType !== 'matching' })
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=600')
     res.send(data)
 })
 
