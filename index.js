@@ -41,7 +41,7 @@ const siteMeta = {
 const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
   const allEventsData = []
 
-  const areUnderdogOdds = (odds) => odds.includes('+')
+  const areUnderdogOdds = (odds) => odds && odds.includes('+')
 
   const getFirstAndLastName = (fullName, lastNameFirst = false) => {
     const noJr = fullName.replace('jr', '').replace('junior', '').trim()
@@ -53,8 +53,11 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
     }
   }
 
-  const buildFightPropName = (lastName1, lastName2) => {
-    const names = [lastName1.toLowerCase(), lastName2.toLowerCase()]
+  const buildFightPropName = (eventOne, eventTwo) => {
+    const names = [
+      `${eventOne.firstName.toLowerCase()}+${eventOne.lastName.toLowerCase()}`,
+      `${eventTwo.firstName.toLowerCase()}+${eventTwo.lastName.toLowerCase()}`
+    ]
     names.sort((a, b) => a.localeCompare(b))
     return names.join('_v_')
   }
@@ -68,7 +71,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
         underdog: areUnderdogOdds(fighterLine.odds)
       })))
       .reduce((accObj, event) => {
-        const propName = buildFightPropName(event[0].lastName, event[1].lastName)
+        const propName = buildFightPropName(event[0], event[1])
 
         const getUnderdog = (fighterLines) => {
           const underdogFighter = fighterLines.find((fighterLine) => fighterLine.underdog)
@@ -85,10 +88,11 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
       }, {})
 
       eventData.siteName = siteName
+      eventData.siteUrl = siteMeta[siteName].urls[eventType]
       return eventData
   } 
 
-  const findOpposingOdds = ({ commonProps, siteOneEventsData, siteTwoEventsData, siteNames }) => {
+  const findOpposingOdds = ({ commonProps, siteOneEventsData, siteTwoEventsData, siteNames, siteUrls }) => {
     // const siteNames = [siteOneEventsData.siteName, siteTwoEventsData.siteName]
     const opposingOddsMatchNames = commonProps.map((propName) => {
       const siteOneUnderdog = siteOneEventsData[propName].underdog
@@ -100,7 +104,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
       }
     }).filter((event) => opposing ? event.isOpposing : !event.isOpposing).map(event => event.eventName)
 
-    return { siteNames, matchNames: opposingOddsMatchNames }
+    return { siteNames, siteUrls, matchNames: opposingOddsMatchNames }
   }
 
 
@@ -120,7 +124,8 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
           commonProps: commonProps,
           siteOneEventsData: mainEventData.fighterData,
           siteTwoEventsData: eventDataIterable.fighterData,
-          siteNames: [mainEventData.siteName, eventDataIterable.siteName]
+          siteNames: [mainEventData.siteName, eventDataIterable.siteName],
+          siteUrls: [mainEventData.siteUrl, eventDataIterable.siteUrl],
         })
 
         // if (opposingOddsData.matchNames.length) allOpposingOdds.push(opposingOddsData)
@@ -255,6 +260,12 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
   await browser.close();
   return allOpposingOdds
 };
+
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 
 
 app.get('/api/:eventType', async (req, res) => {
