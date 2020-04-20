@@ -11,5 +11,8 @@
   "dependencies": {
     "express": "^4.17.1",
     "puppeteer": "^3.0.0"
+  },
+  "engines": {
+    "node": "12.8.1"
   }
 }
