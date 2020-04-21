@@ -162,7 +162,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
 
   if (siteMeta.sportsBetting.urls[eventType]) {
     console.log('requesting sportsbetting.ag...')
-    await page.goto(siteMeta.sportsBetting.urls[eventType], {waitUntil: 'networkidle2'});
+    await page.goto(siteMeta.sportsBetting.urls[eventType], {waitUntil: 'networkidle2'}).catch(console.warn);
     
     console.log('scraping event data...')
     const sportsBettingEventsDataArray = await page.evaluate(() => 
@@ -177,7 +177,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
           }
         }).filter(line => line.odds)
       ).filter(event => event[0])
-    )
+    ).catch(console.warn)
     allEventsData.push(toEventShape(sportsBettingEventsDataArray, 'sportsBetting'))
   }
 
@@ -188,8 +188,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
 
   if (siteMeta.myBookie.urls[eventType]) {
     console.log('requesting mybookie.ag...')
-    await page.goto(siteMeta.myBookie.urls[eventType], {waitUntil: 'networkidle2'});
-    // await page.goto('https://mybookie.ag/sportsbook/boxing/', {waitUntil: 'networkidle2'});
+    await page.goto(siteMeta.myBookie.urls[eventType], {waitUntil: 'networkidle2'}).catch(console.warn);
   
     console.log('scraping event data...')
     const myBookieEventsDataArray = await page.evaluate(() => 
@@ -199,7 +198,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
   
         return fightersNames.map((fighterName, i) => ({ name: fighterName.toLowerCase(), odds: fightersOdds[i] }))
       }).filter(event => event.length)
-    )
+    ).catch(console.warn)
     allEventsData.push(toEventShape(myBookieEventsDataArray, 'myBookie'))
   }
 
@@ -210,7 +209,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
 
   if (siteMeta.betNow.urls[eventType]) {
     console.log('requesting betNow.eu...')
-    await page.goto(siteMeta.betNow.urls[eventType], {waitUntil: 'networkidle2'});
+    await page.goto(siteMeta.betNow.urls[eventType], {waitUntil: 'networkidle2'}).catch(console.warn);
   
     console.log('scraping event data...')
     const betNowEventsDataArray = await page.evaluate(() => {
@@ -235,7 +234,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
         ]
       }, [])
   
-    })
+    }).catch(console.warn)
     allEventsData.push(toEventShape(betNowEventsDataArray, 'betNow'))
   }
 
@@ -243,7 +242,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
 
   if (siteMeta.bovada.urls[eventType]) {
     console.log('requesting bovada.lv...')
-    await page.goto(siteMeta.bovada.urls[eventType], {waitUntil: 'networkidle2'});
+    await page.goto(siteMeta.bovada.urls[eventType], {waitUntil: 'networkidle2'}).catch(console.warn);
     
     console.log('scraping event data...')
     const bovadaEventsDataArray = await page.evaluate(() =>
@@ -253,7 +252,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
   
         return fighterNames.map((name, i) => ({ name, odds: fighterOdds[i] }))
       })
-    )
+    ).catch(console.warn)
     allEventsData.push(toEventShape(bovadaEventsDataArray, 'bovada'))
   }
 
@@ -262,11 +261,11 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
 
   if (siteMeta.gtBets.urls[eventType]) {
     console.log('requesting gtbets.eu...')
-    await page.goto(siteMeta.gtBets.urls[eventType], {waitUntil: 'networkidle2'});
+    await page.goto(siteMeta.gtBets.urls[eventType], {waitUntil: 'networkidle2'}).catch(console.warn);
     
     console.log('scraping event data...')
     // await page.waitForSelector('tr.wagering-event-competitor' , { timeout: 1000 })
-    await page.waitForSelector('td.wagering-event-team' , { timeout: 2000 })
+    await page.waitForSelector('td.wagering-event-team' , { timeout: 2000 }).catch(console.warn)
     const gtBetsEventsDataArray = await page.evaluate(() =>
       Array.from(document.querySelectorAll('tbody.wagering-events')).map(event => 
         Array.from(event.querySelectorAll('tr.wagering-event-competitor')).map(fighterLine => {
@@ -279,7 +278,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
           }
         }).filter(line => line.odds)
       ).filter(event => event[0])
-    )
+    ).catch(console.warn)
     allEventsData.push(toEventShape(gtBetsEventsDataArray, 'gtBets'))
   }
 
