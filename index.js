@@ -36,6 +36,13 @@ const siteMeta = {
         darts: 'https://www.bovada.lv/sports/darts',
       }
     },
+    gtBets: {
+      urls: {
+        mma: 'https://www.gtbets.eu/wagering1.asp?mode=lines&league=BOX&lg=1',
+        boxing: 'https://www.gtbets.eu/wagering1.asp?mode=lines&league=BOX&lg=1',
+        tableTennis: 'https://www.gtbets.eu/wagering1.asp?mode=lines&league=Tab%20Ten&lg=1',
+      }
+    }
   }
   
 const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
@@ -251,6 +258,30 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
   }
 
 
+
+
+  if (siteMeta.gtBets.urls[eventType]) {
+    console.log('requesting gtbets.eu...')
+    await page.goto(siteMeta.gtBets.urls[eventType], {waitUntil: 'networkidle2'});
+    
+    console.log('scraping event data...')
+    // await page.waitForSelector('tr.wagering-event-competitor' , { timeout: 1000 })
+    await page.waitForSelector('td.wagering-event-team' , { timeout: 2000 })
+    const gtBetsEventsDataArray = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('tbody.wagering-events')).map(event => 
+        Array.from(event.querySelectorAll('tr.wagering-event-competitor')).map(fighterLine => {
+          const nameNode = fighterLine.querySelector('td.wagering-event-team')
+          const oddsNode = fighterLine.querySelector('label.wagering-event-trigger span')
+  
+          return {
+            name: nameNode && nameNode.innerText && nameNode.innerText.toLowerCase(),
+            odds: oddsNode && oddsNode.innerText,
+          }
+        }).filter(line => line.odds)
+      ).filter(event => event[0])
+    )
+    allEventsData.push(toEventShape(gtBetsEventsDataArray, 'gtBets'))
+  }
 
   console.log('all done scraping yo')
 
