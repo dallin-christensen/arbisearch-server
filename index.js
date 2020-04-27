@@ -11,6 +11,8 @@ const transporter = nodemailer.createTransport({
   }
 })
 
+const TO_EMAILS = 'christensen.dallin@gmail.com, bustindustin959@gmail.com'
+
 
 const app = express();
 
@@ -372,7 +374,7 @@ site urls: ${event.siteUrls[0]} ${event.siteUrls[1]}
 
     const mailOptions = {
       from: 'arbisearchmail@gmail.com',
-      to: 'christensen.dallin@gmail.com',
+      to: TO_EMAILS,
       subject: 'you have arbisearch hits',
       text: messageStrings.join('\n')
     }
@@ -390,7 +392,7 @@ const testMail = async () => {
   console.log('>>> ',process.env.EMAIL)
   const mailOptions = {
     from: 'arbisearchmail@gmail.com',
-    to: 'christensen.dallin@gmail.com',
+    to: TO_EMAILS,
     subject: 'inital email working :)',
     text: 'arbisearch automation ready.'
   }
@@ -405,7 +407,7 @@ const testMail = async () => {
 
 const checkEveryHour = () => {
   testMail()
-  // scrapeAndEmail()
+  scrapeAndEmail()
   setInterval(() => {
     scrapeAndEmail()
   }, 3600000)
