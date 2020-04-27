@@ -1,8 +1,18 @@
+require('dotenv').config()
 const puppeteer = require('puppeteer')
 const express = require('express')
+const nodemailer = require('nodemailer')
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL,
+    pass: process.env.PASS
+  }
+})
+
 
 const app = express();
-
 
 const siteMeta = {
     sportsBetting: {
@@ -191,6 +201,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
     await page.goto(siteMeta.myBookie.urls[eventType], {waitUntil: 'networkidle2'}).catch(console.warn);
   
     console.log('scraping event data...')
+    await page.waitForSelector('div.sportsbook-lines' , { timeout: 5000 }).catch(console.warn)
     const myBookieEventsDataArray = await page.evaluate(() => 
       Array.from(document.querySelectorAll('div.sportsbook-lines')).map(event => {
         const fightersNames = Array.from(event.querySelectorAll('p.team-name')).map(fighterNamesNodes => fighterNamesNodes.title)
@@ -265,7 +276,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
     
     console.log('scraping event data...')
     // await page.waitForSelector('tr.wagering-event-competitor' , { timeout: 1000 })
-    await page.waitForSelector('td.wagering-event-team' , { timeout: 2000 }).catch(console.warn)
+    await page.waitForSelector('td.wagering-event-team' , { timeout: 5000 }).catch(console.warn)
     const gtBetsEventsDataArray = await page.evaluate(() =>
       Array.from(document.querySelectorAll('tbody.wagering-events')).map(event => 
         Array.from(event.querySelectorAll('tr.wagering-event-competitor')).map(fighterLine => {
@@ -282,7 +293,7 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
     allEventsData.push(toEventShape(gtBetsEventsDataArray, 'gtBets'))
   }
 
-  console.log('all done scraping yo')
+  console.log("\x1b[32m", `${eventType} scraping complete`, '\x1b[0m')
 
 
   const allOpposingOdds = findAllOpposingOdds(allEventsData)
@@ -305,6 +316,97 @@ app.get('/api/:eventType', async (req, res) => {
     res.set('Cache-Control', 'public, max-age=300, s-maxage=600')
     res.send(data)
 })
+
+const scrapeAndEmail = async ({ sendInitalEmail = false }) => {
+  const eventTypes = ['mma', 'boxing', 'tableTennis', 'darts']
+  const allEventTypesData = []
+  const positiveData = []
+
+
+  for (const eventType of eventTypes) {
+    const data = await scrapeData({ eventType, opposing: true }).catch(console.error)
+    allEventTypesData.push({ data, eventType })
+  }
+
+
+
+
+  allEventTypesData.forEach(eventType => {
+    eventType.data.forEach(event => {
+      if (event.matchNames.length) {
+        positiveData.push({...event, eventType: eventType.eventType})
+      }
+    })
+  })
+  
+
+  const date = new Date();
+  const n = date.toDateString();
+  const time = date.toLocaleTimeString();
+
+  console.log("\x1b[32m", `auto-scrape complete: ${time} ${n}`, '\x1b[0m')
+
+
+
+  if (positiveData.length) {
+    const messageStrings = []
+
+    const capitalizeFirstLetter = (string) => string.charAt(0).toUpperCase() + string.slice(1);
+
+    const toReadableMatchname = (matchName) => {
+      return matchName.split('_').map((word) => capitalizeFirstLetter(word)).join('   ')
+        .split('+').map((word) => capitalizeFirstLetter(word)).join(' ')
+    }
+
+
+
+    positiveData.forEach(event => {
+      messageStrings.push(`
+event type: ${event.eventType}
+site names: ${event.siteNames[0]} ${event.siteNames[1]},
+competitors: \n${event.matchNames.map(matchName => `${toReadableMatchname(matchName)}`).join('\n')}
+site urls: ${event.siteUrls[0]} ${event.siteUrls[1]}
+
+      `)
+    })
+
+    const mailOptions = {
+      from: 'arbisearchmail@gmail.com',
+      to: 'christensen.dallin@gmail.com',
+      subject: 'you have arbisearch hits',
+      text: messageStrings.join('\n')
+    }
+
+    const mailResponse = await transporter.sendMail(mailOptions)
+      .catch((err) => {
+        console.error('mail failed to send: ', err)
+      })
+
+    console.log('mail sent successfully!', mailResponse)
+  } else if (sendInitalEmail) {
+    const mailOptions = {
+      from: 'arbisearchmail@gmail.com',
+      to: 'christensen.dallin@gmail.com',
+      subject: 'inital email working :)',
+      text: 'arbisearch automation ready.'
+    }
+
+    const mailResponse = await transporter.sendMail(mailOptions)
+      .catch((err) => {
+        console.error('mail failed to send: ', err)
+      })
+
+    console.log('mail sent successfully!', mailResponse)
+  }
+}
+
+const checkEveryHour = () => {
+  scrapeAndEmail({ sendInitalEmail: true })
+  setInterval(() => {
+    scrapeAndEmail()
+  }, 3600000)
+}
+checkEveryHour()
 
 const port = process.env.PORT || 4000
 app.listen(port, () => console.log(`listening on port ${port}`));
