@@ -2,6 +2,7 @@ require('dotenv').config()
 const puppeteer = require('puppeteer')
 const express = require('express')
 const nodemailer = require('nodemailer')
+const stayAlive = require('./stayAlive');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -408,11 +409,13 @@ const testMail = async () => {
 const checkEveryHour = () => {
   testMail()
   scrapeAndEmail()
+
   setInterval(() => {
     scrapeAndEmail()
   }, 3600000)
 }
 checkEveryHour()
+stayAlive.startKeepAlive()
 
 const port = process.env.PORT || 4000
 app.listen(port, () => console.log(`listening on port ${port}`));
