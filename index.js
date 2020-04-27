@@ -317,7 +317,7 @@ app.get('/api/:eventType', async (req, res) => {
     res.send(data)
 })
 
-const scrapeAndEmail = async ({ sendInitalEmail = false }) => {
+const scrapeAndEmail = async () => {
   const eventTypes = ['mma', 'boxing', 'tableTennis', 'darts']
   const allEventTypesData = []
   const positiveData = []
@@ -383,25 +383,29 @@ site urls: ${event.siteUrls[0]} ${event.siteUrls[1]}
       })
 
     console.log('mail sent successfully!', mailResponse)
-  } else if (sendInitalEmail) {
-    const mailOptions = {
-      from: 'arbisearchmail@gmail.com',
-      to: 'christensen.dallin@gmail.com',
-      subject: 'inital email working :)',
-      text: 'arbisearch automation ready.'
-    }
-
-    const mailResponse = await transporter.sendMail(mailOptions)
-      .catch((err) => {
-        console.error('mail failed to send: ', err)
-      })
-
-    console.log('mail sent successfully!', mailResponse)
   }
 }
 
+const testMail = async () => {
+  console.log('>>> ',process.env.EMAIL)
+  const mailOptions = {
+    from: 'arbisearchmail@gmail.com',
+    to: 'christensen.dallin@gmail.com',
+    subject: 'inital email working :)',
+    text: 'arbisearch automation ready.'
+  }
+
+  const mailResponse = await transporter.sendMail(mailOptions)
+    .catch((err) => {
+      console.error('mail failed to send: ', err)
+    })
+
+  console.log('mail sent successfully!', mailResponse)
+}
+
 const checkEveryHour = () => {
-  scrapeAndEmail({ sendInitalEmail: true })
+  testMail()
+  // scrapeAndEmail()
   setInterval(() => {
     scrapeAndEmail()
   }, 3600000)
