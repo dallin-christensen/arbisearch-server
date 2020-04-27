@@ -262,7 +262,8 @@ const scrapeData = async ({ eventType = 'mma', opposing = true }) => {
     const bovadaEventsDataArray = await page.evaluate(() =>
       Array.from(document.querySelectorAll('section.coupon-content')).map(event => {
         const fighterNames = Array.from(event.querySelectorAll('span.name')).map(name => name.innerText)
-        const fighterOdds = Array.from(event.querySelectorAll('span.bet-price')).map(odds => odds.innerText)
+        const fighterOdds = Array.from(event.querySelectorAll('span.bet-price')).map(odds => odds.innerText).filter(odds => !odds.includes('('))
+
   
         return fighterNames.map((name, i) => ({ name, odds: fighterOdds[i] }))
       })
